@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>พนักงาน - ฮิปเตอร์สเต็ก</title>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, arrayUnion, collection, getDocs, addDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCSjCe_m6m3fl58wGVygsE8_bDOSk2WfD0",
+    authDomain: "panu-648a8.firebaseapp.com",
+    projectId: "panu-648a8",
+    storageBucket: "panu-648a8.firebasestorage.app",
+    messagingSenderId: "1042503149018",
+    appId: "1:1042503149018:web:a05888018fd56da4fb0ce3"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  window._db = db;
+  window._fn = { doc, getDoc, setDoc, updateDoc, deleteDoc, arrayUnion, collection, getDocs, addDoc, query, orderBy };
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Sarabun', sans-serif; background: #f5f5f5; color: #333; min-height: 100vh; }
+  .header { background: linear-gradient(135deg, #1a1210, #c0392b); color: white; padding: 16px; text-align: center; }
+  .header h1 { font-size: 20px; }
+  .header p { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+  .tabs { display: flex; background: white; border-bottom: 2px solid #eee; overflow-x: auto; }
+  .tab { flex: 1; padding: 12px 8px; text-align: center; cursor: pointer; font-size: 13px; font-weight: 600; color: #999; border-bottom: 3px solid transparent; white-space: nowrap; min-width: 80px; }
+  .tab.active { color: #c0392b; border-bottom-color: #c0392b; }
+  .content { padding: 16px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .card h3 { font-size: 16px; margin-bottom: 16px; color: #333; }
+  input, select, textarea { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; font-size: 14px; font-family: 'Sarabun', sans-serif; margin-bottom: 10px; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: #c0392b; }
+  textarea { height: 80px; resize: none; }
+  .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: 'Sarabun', sans-serif; margin-bottom: 8px; }
+  .btn-red { background: #c0392b; color: white; }
+  .btn-green { background: #27ae60; color: white; }
+  .btn-gray { background: #95a5a6; color: white; }
+  .btn-sm { padding: 8px 14px; font-size: 13px; border: none; border-radius: 8px; cursor: pointer; font-family: 'Sarabun', sans-serif; font-weight: 600; }
+  .btn-sm-red { background: #e74c3c; color: white; }
+  .btn-sm-blue { background: #3498db; color: white; }
+  .result-card { background: #f8f9fa; border-radius: 10px; padding: 16px; margin-top: 16px; display: none; }
+  .result-card.show { display: block; }
+  .customer-avatar { width: 60px; height: 60px; border-radius: 50%; background: #ddd; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 30px; overflow: hidden; }
+  .customer-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .customer-name { font-size: 18px; font-weight: 700; text-align: center; color: #333; margin-bottom: 8px; }
+  .stamps-display { display: flex; justify-content: center; gap: 8px; margin: 16px 0; }
+  .s { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .s.on { border-color: #e67e22; background: rgba(230,126,34,0.1); }
+  .stamp-info { text-align: center; font-size: 14px; color: #666; margin-bottom: 16px; }
+  .stamp-info strong { color: #c0392b; font-size: 18px; }
+  .customer-row { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8f9fa; border-radius: 10px; margin-bottom: 8px; cursor: pointer; }
+  .cust-avatar { width: 44px; height: 44px; border-radius: 50%; background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 22px; overflow: hidden; flex-shrink: 0; }
+  .cust-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .cust-info { flex: 1; }
+  .cust-name { font-size: 14px; font-weight: 700; }
+  .cust-sub { font-size: 12px; color: #999; margin-top: 2px; }
+  .cust-stamps { font-size: 20px; font-weight: 700; color: #c0392b; }
+  .badge { padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+  .badge-full { background: rgba(39,174,96,0.15); color: #27ae60; }
+  .menu-item-row { display: flex; align-items: center; gap: 10px; padding: 12px; background: #f8f9fa; border-radius: 10px; margin-bottom: 8px; }
+  .menu-emoji-display { font-size: 28px; flex-shrink: 0; }
+  .menu-item-info { flex: 1; }
+  .menu-item-name { font-size: 14px; font-weight: 700; color: #333; }
+  .menu-item-desc { font-size: 12px; color: #999; margin-top: 2px; }
+  .menu-item-price { font-size: 15px; font-weight: 700; color: #c0392b; flex-shrink: 0; }
+  .menu-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .cat-header { font-size: 13px; font-weight: 700; color: #c0392b; margin: 16px 0 8px; padding-left: 4px; letter-spacing: 1px; }
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: center; justify-content: center; }
+  .modal-bg.show { display: flex; }
+  .modal-box { background: white; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
+  .modal-box h3 { font-size: 18px; margin-bottom: 16px; color: #333; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; color: white; z-index: 9999; animation: fadeIn 0.3s; }
+  .toast.success { background: #27ae60; }
+  .toast.error { background: #c0392b; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+  .loading { text-align: center; padding: 30px; color: #999; }
+  .empty { text-align: center; padding: 30px; color: #999; font-size: 14px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🥩 ระบบพนักงาน</h1>
+  <p>ฮิปเตอร์สเต็ก ร้อยเอ็ด</p>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('stamp')">📷 ให้แสตมป์</div>
+  <div class="tab" onclick="switchTab('menu')">🍽️ จัดการเมนู</div>
+  <div class="tab" onclick="switchTab('customers')">👥 ลูกค้า</div>
+</div>
+
+<div class="content">
+
+  <!-- STAMP TAB -->
+  <div class="panel active" id="panel-stamp">
+    <div class="card">
+      <h3>📷 ค้นหาลูกค้าเพื่อให้แสตมป์</h3>
+      <input type="text" id="uid-input" placeholder="กรอก LINE User ID ของลูกค้า">
+      <button class="btn btn-red" onclick="searchCustomer()">🔍 ค้นหาลูกค้า</button>
+
+      <div class="result-card" id="result-card">
+        <div class="customer-avatar" id="cust-avatar-result">👤</div>
+        <div class="customer-name" id="cust-name-result">-</div>
+        <div class="stamps-display" id="stamps-display-result"></div>
+        <div class="stamp-info">สะสมแล้ว <strong id="stamp-num-result">0</strong> / 5 ดวง</div>
+        <button class="btn btn-green" onclick="addStamp()">🔥 ให้แสตมป์ +1</button>
+        <button class="btn btn-gray" onclick="clearResult()">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENU TAB -->
+  <div class="panel" id="panel-menu">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="margin:0">🍽️ เมนูทั้งหมด</h3>
+        <button class="btn-sm btn-sm-blue" onclick="openAddMenu()">+ เพิ่มเมนู</button>
+      </div>
+      <div id="menu-list"><div class="loading">กำลังโหลด...</div></div>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS TAB -->
+  <div class="panel" id="panel-customers">
+    <div class="card">
+      <h3>👥 ลูกค้าทั้งหมด</h3>
+      <div id="customers-list"><div class="loading">กำลังโหลด...</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MENU MODAL -->
+<div class="modal-bg" id="menu-modal">
+  <div class="modal-box">
+    <h3 id="modal-title">เพิ่มเมนูใหม่</h3>
+    <input type="hidden" id="edit-menu-id">
+    <div class="row-2">
+      <input type="text" id="menu-emoji" placeholder="Emoji เช่น 🥩" style="margin-bottom:10px">
+      <select id="menu-cat" style="margin-bottom:10px">
+        <option value="steak">🥩 สเต็ก</option>
+        <option value="chicken">🍗 ไก่และหมู</option>
+        <option value="side">🥗 เครื่องเคียง</option>
+      </select>
+    </div>
+    <input type="text" id="menu-name" placeholder="ชื่อเมนู">
+    <textarea id="menu-desc" placeholder="รายละเอียด"></textarea>
+    <div class="row-2">
+      <input type="number" id="menu-price" placeholder="ราคา (฿)">
+      <input type="text" id="menu-weight" placeholder="ปริมาณ เช่น 250g">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-red" onclick="saveMenu()" style="margin:0">บันทึก</button>
+      <button class="btn btn-gray" onclick="closeMenuModal()" style="margin:0">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentCustomerId = null;
+  let currentCustomerData = null;
+  const CATS = { steak: '🥩 สเต็ก', chicken: '🍗 ไก่และหมู', side: '🥗 เครื่องเคียง & เครื่องดื่ม' };
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('panel-' + tab).classList.add('active');
+    if (tab === 'customers') loadCustomers();
+    if (tab === 'menu') loadMenu();
+  }
+
+  function showToast(msg, type = 'success') {
+    const t = document.createElement('div');
+    t.className = 'toast ' + type;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  }
+
+  function renderResultStamps(stamps) {
+    const grid = document.getElementById('stamps-display-result');
+    grid.innerHTML = '';
+    for (let i = 0; i < 5; i++) {
+      const s = document.createElement('div');
+      s.className = 's' + (i < stamps ? ' on' : '');
+      s.textContent = i < stamps ? '🔥' : '○';
+      grid.appendChild(s);
+    }
+    document.getElementById('stamp-num-result').textContent = stamps;
+  }
+
+  async function searchCustomer(uid) {
+    const inputUid = uid || document.getElementById('uid-input').value.trim();
+    if (!inputUid) { showToast('กรุณากรอก LINE ID', 'error'); return; }
+    try {
+      const db = window._db;
+      const { doc, getDoc } = window._fn;
+      const ref = doc(db, 'customers', inputUid);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) { showToast('ไม่พบลูกค้านี้ในระบบ', 'error'); return; }
+      currentCustomerId = inputUid;
+      currentCustomerData = snap.data();
+      document.getElementById('cust-name-result').textContent = currentCustomerData.name || 'ไม่ระบุชื่อ';
+      if (currentCustomerData.pictureUrl) {
+        document.getElementById('cust-avatar-result').innerHTML = `<img src="${currentCustomerData.pictureUrl}">`;
+      } else {
+        document.getElementById('cust-avatar-result').textContent = '👤';
+      }
+      renderResultStamps(currentCustomerData.stamps || 0);
+      document.getElementById('result-card').classList.add('show');
+    } catch(e) {
+      showToast('เกิดข้อผิดพลาด: ' + e.message, 'error');
+    }
+  }
+
+  async function addStamp() {
+    if (!currentCustomerId || !currentCustomerData) return;
+    if (currentCustomerData.stamps >= 5) { showToast('ลูกค้าครบ 5 ดวงแล้ว ให้แลกก่อน', 'error'); return; }
+    try {
+      const db = window._db;
+      const { doc, updateDoc, arrayUnion } = window._fn;
+      const newStamps = (currentCustomerData.stamps || 0) + 1;
+      await updateDoc(doc(db, 'customers', currentCustomerId), {
+        stamps: newStamps,
+        history: arrayUnion({ type: 'stamp', date: new Date().toISOString() })
+      });
+      currentCustomerData.stamps = newStamps;
+      renderResultStamps(newStamps);
+      showToast('✅ ให้แสตมป์สำเร็จ! (' + newStamps + '/5)');
+      if (newStamps >= 5) showToast('🎉 ลูกค้าครบ 5 ดวงแล้ว!');
+    } catch(e) {
+      showToast('เกิดข้อผิดพลาด', 'error');
+    }
+  }
+
+  function clearResult() {
+    currentCustomerId = null;
+    currentCustomerData = null;
+    document.getElementById('result-card').classList.remove('show');
+    document.getElementById('uid-input').value = '';
+  }
+
+  async function loadMenu() {
+    const list = document.getElementById('menu-list');
+    list.innerHTML = '<div class="loading">กำลังโหลด...</div>';
+    try {
+      const db = window._db;
+      const { collection, getDocs } = window._fn;
+      const snap = await getDocs(collection(db, 'menu'));
+      const items = [];
+      snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+
+      if (items.length === 0) {
+        list.innerHTML = '<div class="empty">ยังไม่มีเมนู กด "+ เพิ่มเมนู" เพื่อเริ่มต้น</div>';
+        return;
+      }
+
+      // Group by category
+      const grouped = {};
+      items.forEach(item => {
+        const cat = item.category || 'side';
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push(item);
+      });
+
+      let html = '';
+      Object.keys(CATS).forEach(cat => {
+        if (!grouped[cat] || grouped[cat].length === 0) return;
+        html += `<div class="cat-header">${CATS[cat]}</div>`;
+        grouped[cat].forEach(item => {
+          html += `<div class="menu-item-row">
+            <div class="menu-emoji-display">${item.emoji || '🍽️'}</div>
+            <div class="menu-item-info">
+              <div class="menu-item-name">${item.name}</div>
+              <div class="menu-item-desc">${item.description || ''}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="menu-item-price">${item.price}฿</div>
+              ${item.weight ? `<div style="font-size:11px;color:#999">${item.weight}</div>` : ''}
+            </div>
+            <div class="menu-item-actions">
+              <button class="btn-sm btn-sm-blue" onclick="openEditMenu('${item.id}','${item.emoji||''}','${item.category}','${item.name}','${encodeURIComponent(item.description||'')}','${item.price}','${item.weight||''}')">✏️</button>
+              <button class="btn-sm btn-sm-red" onclick="deleteMenu('${item.id}','${item.name}')">🗑️</button>
+            </div>
+          </div>`;
+        });
+      });
+      list.innerHTML = html;
+    } catch(e) {
+      list.innerHTML = '<div class="empty" style="color:red">โหลดไม่ได้: ' + e.message + '</div>';
+    }
+  }
+
+  function openAddMenu() {
+    document.getElementById('modal-title').textContent = 'เพิ่มเมนูใหม่';
+    document.getElementById('edit-menu-id').value = '';
+    document.getElementById('menu-emoji').value = '';
+    document.getElementById('menu-cat').value = 'steak';
+    document.getElementById('menu-name').value = '';
+    document.getElementById('menu-desc').value = '';
+    document.getElementById('menu-price').value = '';
+    document.getElementById('menu-weight').value = '';
+    document.getElementById('menu-modal').classList.add('show');
+  }
+
+  function openEditMenu(id, emoji, cat, name, desc, price, weight) {
+    document.getElementById('modal-title').textContent = 'แก้ไขเมนู';
+    document.getElementById('edit-menu-id').value = id;
+    document.getElementById('menu-emoji').value = emoji;
+    document.getElementById('menu-cat').value = cat;
+    document.getElementById('menu-name').value = name;
+    document.getElementById('menu-desc').value = decodeURIComponent(desc);
+    document.getElementById('menu-price').value = price;
+    document.getElementById('menu-weight').value = weight;
+    document.getElementById('menu-modal').classList.add('show');
+  }
+
+  function closeMenuModal() {
+    document.getElementById('menu-modal').classList.remove('show');
+  }
+
+  async function saveMenu() {
+    const id = document.getElementById('edit-menu-id').value;
+    const data = {
+      emoji: document.getElementById('menu-emoji').value.trim() || '🍽️',
+      category: document.getElementById('menu-cat').value,
+      name: document.getElementById('menu-name').value.trim(),
+      description: document.getElementById('menu-desc').value.trim(),
+      price: parseInt(document.getElementById('menu-price').value) || 0,
+      weight: document.getElementById('menu-weight').value.trim(),
+    };
+    if (!data.name) { showToast('กรุณากรอกชื่อเมนู', 'error'); return; }
+    try {
+      const db = window._db;
+      const { collection, addDoc, doc, setDoc } = window._fn;
+      if (id) {
+        await setDoc(doc(db, 'menu', id), data);
+        showToast('✅ แก้ไขเมนูสำเร็จ');
+      } else {
+        await addDoc(collection(db, 'menu'), data);
+        showToast('✅ เพิ่มเมนูสำเร็จ');
+      }
+      closeMenuModal();
+      loadMenu();
+    } catch(e) {
+      showToast('เกิดข้อผิดพลาด: ' + e.message, 'error');
+    }
+  }
+
+  async function deleteMenu(id, name) {
+    if (!confirm('ลบ "' + name + '" ออกจากเมนู?')) return;
+    try {
+      const db = window._db;
+      const { doc, deleteDoc } = window._fn;
+      await deleteDoc(doc(db, 'menu', id));
+      showToast('✅ ลบเมนูสำเร็จ');
+      loadMenu();
+    } catch(e) {
+      showToast('เกิดข้อผิดพลาด', 'error');
+    }
+  }
+
+  async function loadCustomers() {
+    try {
+      const db = window._db;
+      const { collection, getDocs } = window._fn;
+      const snap = await getDocs(collection(db, 'customers'));
+      const customers = [];
+      snap.forEach(d => customers.push({ id: d.id, ...d.data() }));
+      customers.sort((a, b) => (b.stamps || 0) - (a.stamps || 0));
+      const list = document.getElementById('customers-list');
+      if (customers.length === 0) {
+        list.innerHTML = '<div class="empty">ยังไม่มีลูกค้า</div>';
+        return;
+      }
+      list.innerHTML = customers.map(c => `
+        <div class="customer-row" onclick="selectCustomer('${c.id}')">
+          <div class="cust-avatar">${c.pictureUrl ? `<img src="${c.pictureUrl}">` : '👤'}</div>
+          <div class="cust-info">
+            <div class="cust-name">${c.name || 'ไม่ระบุชื่อ'}</div>
+            <div class="cust-sub">แลกแล้ว ${c.redeemCount || 0} ครั้ง</div>
+          </div>
+          <div style="text-align:right">
+            <div class="cust-stamps">${c.stamps || 0}/5</div>
+            ${(c.stamps || 0) >= 5 ? '<div class="badge badge-full">ครบแล้ว!</div>' : ''}
+          </div>
+        </div>
+      `).join('');
+    } catch(e) {
+      document.getElementById('customers-list').innerHTML = '<div class="empty" style="color:red">โหลดไม่ได้: ' + e.message + '</div>';
+    }
+  }
+
+  function selectCustomer(uid) {
+    document.querySelectorAll('.tab')[0].click();
+    document.getElementById('uid-input').value = uid;
+    searchCustomer(uid);
+  }
+</script>
+</body>
+</html>
